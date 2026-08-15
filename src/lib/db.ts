@@ -1,13 +1,11 @@
 import "server-only";
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-// ponytail: SQLite via Prisma 7 driver adapter. For Postgres swap for
-// PrismaPg + @prisma/adapter-pg (see DATABASE.md). The adapter opens the file
-// from DATABASE_URL ("file:./dev.db"); no manual better-sqlite3 handle needed.
+// Postgres (Vercel/prod). Local dev uses the `main` branch (SQLite adapter).
 function adapter() {
-  const url = process.env.DATABASE_URL ?? "file:./dev.db";
-  return new PrismaBetterSqlite3({ url });
+  const url = process.env.DATABASE_URL ?? "postgresql://localhost:5432/postgres";
+  return new PrismaPg({ connectionString: url });
 }
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };

@@ -1,14 +1,13 @@
-// KoperasiHub — Prisma schema (SQLite for local/dev).
-// NOTE: SQLite has no native ENUM, so Role/MovementType are String fields
-// constrained in TS (lib/types.ts). To run on Postgres, change the datasource
-// below and promote these Strings to `enum` — no other change required.
+// KoperasiHub — Prisma schema (POSTGRES for Vercel/prod).
+// Local dev (SQLite) lives on the `main` branch.
+// NOTE: Role/MovementType are String fields constrained in TS (lib/types.ts).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 // NOTE: Prisma 7 moved the connection URL out of the schema into
 // prisma.config.ts + the driver adapter passed in src/lib/db.ts.
