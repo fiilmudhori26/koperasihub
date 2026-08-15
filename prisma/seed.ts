@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const url = process.env.DATABASE_URL ?? "file:./dev.db";
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+const url = (process.env.DATABASE_URL ?? "postgresql://localhost:5432/postgres")
+  .replace(/sslmode=[^&]+/, "sslmode=no-verify");
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
 // ponytail: deterministic-ish pseudo random so seed is reproducible per run.
 function rng(seed: number) {

@@ -4,7 +4,10 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 // Postgres (Vercel/prod). Local dev uses the `main` branch (SQLite adapter).
 function adapter() {
-  const url = process.env.DATABASE_URL ?? "postgresql://localhost:5432/postgres";
+  // Supabase pooler cert isn't in the system trust store, so verify-full
+  // fails. Force no-verify on the connection string.
+  const url = (process.env.DATABASE_URL ?? "postgresql://localhost:5432/postgres")
+    .replace(/sslmode=[^&]+/, "sslmode=no-verify");
   return new PrismaPg({ connectionString: url });
 }
 
