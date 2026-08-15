@@ -1,0 +1,129 @@
+// KoperasiHub — Prisma schema (SQLite for local/dev).
+// NOTE: SQLite has no native ENUM, so Role/MovementType are String fields
+// constrained in TS (lib/types.ts). To run on Postgres, change the datasource
+// below and promote these Strings to `enum` — no other change required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+// NOTE: Prisma 7 moved the connection URL out of the schema into
+// prisma.config.ts + the driver adapter passed in src/lib/db.ts.
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String // bcrypt hash
+  role      String   @default("CASHIER") // ADMIN | MANAGER | CASHIER
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[] @relation("CashierTransactions")
+  movements    InventoryMovement[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description  String?
+  createdAt   DateTime @default(now())
+
+  products Product[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  sku           String   @unique
+  description   String?
+  categoryId    String
+  price         Int // sell price, IDR
+  costPrice     Int // buy price, IDR
+  stock         Int      @default(0)
+  minimumStock  Int      @default(10)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category    Category           @relation(fields: [categoryId], references: [id])
+  movements   InventoryMovement[]
+  items       TransactionItem[]
+}
+
+model Customer {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String?
+  email           String?
+  address         String?
+  totalOrders     Int      @default(0)
+  totalSpent      Int      @default(0) // IDR
+  createdAt       DateTime @default(now())
+
+  transactions Transaction[]
+}
+
+model InventoryMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  type        String // IN | OUT | ADJUSTMENT | RETURN
+  quantity    Int // signed delta: +IN, -OUT
+  reference   String? // e.g. "Purchase #102", "Sale #827"
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  number       String   @unique // TRX-YYYYMMDD-001
+  cashierId    String
+  customerId   String?
+  subtotal     Int
+  discount     Int      @default(0)
+  total        Int
+  paid         Int
+  change       Int
+  paymentMethod String  @default("CASH") // CASH | TRANSFER | QRIS
+  createdAt    DateTime @default(now())
+
+  cashier  User       @relation("CashierTransactions", fields: [cashierId], references: [id])
+  customer Customer?  @relation(fields: [customerId], references: [id])
+  items    TransactionItem[]
+  payments  Payment[]
+
+  @@index([createdAt])
+}
+
+model TransactionItem {
+  id            String   @id @default(cuid())
+  transactionId String
+  productId     String
+  name          String // snapshot of product name at sale time
+  quantity      Int
+  price         Int // unit sell price snapshot
+  costPrice     Int // unit cost snapshot
+  total         Int
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  transactionId String
+  method        String   @default("CASH")
+  amount        Int
+  createdAt     DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
