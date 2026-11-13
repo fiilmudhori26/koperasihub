@@ -23,14 +23,14 @@ A role-based **inventory & point-of-sale platform** for cooperatives / mini-mark
 
 ## Tech Stack
 
-Next.js (App Router) · TypeScript · Tailwind CSS v4 · Prisma ORM · SQLite (driver adapter) · jose (JWT) · bcryptjs · Recharts.
+Next.js (App Router) · TypeScript · Tailwind CSS v4 · Prisma ORM · PostgreSQL (Prisma 7 driver adapter) · jose (JWT) · bcryptjs · Recharts.
 
 ## Local Development
 
 ```bash
 npm install
-cp .env.example .env          # defaults work out of the box
-npx prisma migrate dev        # creates SQLite db + tables
+cp .env.example .env          # then point DATABASE_URL at a Postgres instance
+npx prisma migrate dev        # creates Postgres tables
 npm run db:seed               # loads demo data (3 users, 10 cats, 50 products, 100 customers, 500 tx, ~1000 movements)
 npm run dev                   # http://localhost:3000
 ```
@@ -49,12 +49,14 @@ npm run dev                   # http://localhost:3000
 
 Server Components render data from Prisma directly; Server Actions handle writes (product create, sale processing, auth). A JWT in an httpOnly cookie drives the session. See `DATABASE.md`, `PRD.md`, `DESIGN.md`, `TECH-STACK.md`, `AGENTS.md`, `IMPLEMENTATION-PLAN.md`.
 
-## Switching to PostgreSQL (production)
+## Database setup
 
-1. Set `DATABASE_URL="postgresql://user:pass@host:5432/koperasihub?schema=public"`.
-2. In `prisma/schema.prisma`, the `Role`/`MovementType` fields are `String` (SQLite has no ENUM). On Postgres you can promote them to real `Enum` types, or leave as `String` (recommended — zero code change).
-3. Swap the driver adapter in `src/lib/db.ts` to `@prisma/adapter-pg` + `pg`.
-4. `npx prisma migrate dev`.
+This project uses **PostgreSQL** (via `@prisma/adapter-pg`). `Role`/`MovementType` are stored as `String` (see `src/lib/types.ts`) — works on Postgres without code changes.
+
+- **Local dev**: run Postgres (Docker or a free Neon/Supabase DB) and set `DATABASE_URL` in `.env`.
+- **Production (Vercel)**: use Vercel Storage → Postgres or Neon, then `DATABASE_URL="postgresql://user:pass@host:5432/koperasihub?schema=public"`.
+
+Generate a strong session secret: `openssl rand -base64 32`.
 
 ## CV blurb
 
